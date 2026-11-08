@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Digital Whiteboard — Neo Interface</title>
+
+<!-- Carga de KaTeX para renderizado de LaTeX en tiempo real -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+
+<style>
+:root{--panel:#171b26;--panel2:#202636;--line:#30394b;--accent:#7c9cff;--text:#edf1fa;--muted:#9aa6bb}
+*{box-sizing:border-box}html,body{height:100%;margin:0;font-family:Inter,system-ui,Segoe UI,Arial,sans-serif;background:#10141d;color:var(--text);overflow:hidden}
+button,input,select,textarea{font:inherit}button{border:1px solid var(--line);background:var(--panel2);color:var(--text);border-radius:9px;padding:8px 10px;cursor:pointer;transition:.15s}button:hover{border-color:var(--accent);background:#2a3550}button.active{background:#34466f;border-color:var(--accent);box-shadow:0 0 0 1px #7c9cff55}button:disabled{opacity:.35;cursor:not-allowed}
+#app{height:100%;display:flex;flex-direction:column}.topbar{min-height:58px;background:var(--panel);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px;padding:8px 14px;flex-wrap:wrap;z-index:3}
+.brand{font-weight:800;letter-spacing:.2px;white-space:nowrap;margin-right:8px}.brand span{color:var(--accent)}.group{display:flex;align-items:center;gap:6px;padding-right:10px;border-right:1px solid var(--line)}.group:last-child{border:0}.tiny{font-size:12px;color:var(--muted)}select,input[type=number]{background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:7px;min-width:65px}
+input[type=range]{accent-color:var(--accent);width:88px}.workspace{position:relative;flex:1;min-height:0;background:#0d1119;overflow:hidden}#board{width:100%;height:100%;display:block;touch-action:none;cursor:crosshair}
+.float-tools{position:absolute;right:14px;top:14px;display:flex;gap:6px;z-index:2}.float-tools button{background:#171b26dd;backdrop-filter:blur(8px)}
+.bottombar{position:relative;min-height:68px;background:var(--panel);border-top:1px solid var(--line);display:flex;align-items:center;justify-content:center;gap:7px;padding:8px 12px;flex-wrap:wrap;z-index:3}.tool{min-width:42px;height:42px;display:flex;align-items:center;justify-content:center;font-size:18px}.tool-label{font-size:10px;color:var(--muted);display:block;text-align:center;margin-top:3px}.tool-wrap{display:flex;flex-direction:column;align-items:center;gap:1px}.separator{height:38px;border-left:1px solid var(--line);margin:0 5px}.colors{display:flex;gap:7px;align-items:center}.swatch{width:25px;height:25px;border-radius:50%;padding:0;border:2px solid #ffffff55}.swatch.selected{outline:2px solid var(--accent);outline-offset:3px}.status{position:absolute;left:14px;bottom:12px;color:#9aa6bb;font-size:11px;background:#171b26cc;padding:6px 9px;border-radius:8px;pointer-events:none}.ig-credit{position:absolute;left:14px;bottom:10px;color:#9aa6bb;font-size:12px;font-weight:600;text-decoration:none;letter-spacing:.2px;z-index:4}.ig-credit:hover{color:var(--accent)}
+.modal-backdrop{position:fixed;inset:0;background:#0009;display:none;align-items:center;justify-content:center;z-index:10}.modal{width:min(500px,calc(100vw - 30px));background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:20px;box-shadow:0 20px 80px #0008}.modal h3{margin:0 0 12px}.modal textarea{width:100%;min-height:90px;resize:vertical;background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:9px;padding:10px}.modal input{width:100%;margin:7px 0 12px}.modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}.primary{background:#526fbd;border-color:#7894df}.light{--panel:#f4f6fb;--panel2:#e9edf5;--line:#d0d7e5;--text:#20283a;--muted:#637087}.light .workspace{background:#dfe4ed}.light .float-tools button{background:#ffffffdd}.light .status{background:#ffffffdd}
+@media(max-width:850px){.topbar{gap:6px;padding:7px}.group{padding-right:6px}.bottombar{justify-content:flex-start;overflow-x:auto;flex-wrap:nowrap}.brand{font-size:14px}.tool{min-width:38px}}
+
+/* ===== NEON FUTURE UI / edición visual ===== */
+:root{
+  --panel:#0b1424;
+  --panel2:#111f35;
+  --line:rgba(105,205,255,.22);
+  --accent:#62eaff;
+  --text:#eaf8ff;
+  --muted:#8fa9c5;
+}
+html,body{
+  background:#050914;
+  color:var(--text);
+  font-family:Inter,"Segoe UI",system-ui,sans-serif;
+  letter-spacing:.12px;
+}
+body{
+  background:
+    radial-gradient(ellipse at 12% 8%,rgba(0,190,255,.13),transparent 34%),
+    radial-gradient(ellipse at 88% 88%,rgba(125,65,255,.14),transparent 38%),
+    #050914;
+}
+.topbar,.bottombar{
+  background:linear-gradient(115deg,rgba(8,18,34,.97),rgba(13,25,48,.95) 55%,rgba(16,20,43,.97));
+  border-color:rgba(98,234,255,.22);
+  box-shadow:0 10px 34px rgba(0,0,0,.28),inset 0 1px rgba(255,255,255,.045);
+  backdrop-filter:blur(20px) saturate(145%);
+}
+.topbar{
+  min-height:66px;
+  padding:10px 18px;
+  gap:13px;
+}
+.brand{
+  font-size:15px;
+  font-weight:850;
+  letter-spacing:1.2px;
+  text-transform:uppercase;
+  margin-right:10px;
+}
+.brand span{
+  color:#66edff;
+  text-shadow:0 0 8px rgba(73,226,255,.85),0 0 22px rgba(73,226,255,.35);
+}
+.group{
+  border-color:rgba(98,234,255,.16);
+  gap:7px;
+}
+button,select,input[type=number],.modal textarea{
+  color:#eaf8ff;
+  background:linear-gradient(145deg,rgba(22,42,68,.96),rgba(12,25,45,.98));
+  border:1px solid rgba(119,195,255,.25);
+  border-radius:11px;
+  box-shadow:inset 0 1px rgba(255,255,255,.05),0 5px 15px rgba(0,0,0,.16);
+  transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease,filter .18s ease;
+}
+button{padding:8px 12px}
+button:hover{
+  transform:translateY(-1px);
+  border-color:rgba(98,234,255,.85);
+  box-shadow:0 0 0 1px rgba(98,234,255,.13),0 0 19px rgba(51,205,255,.18);
+  filter:brightness(1.12);
+}
+button:active{transform:translateY(0) scale(.97)}
+button.active{
+  color:#04111e;
+  font-weight:750;
+  border-color:#a2f6ff;
+  background:linear-gradient(130deg,#62eaff,#91b5ff);
+  box-shadow:0 0 0 1px rgba(98,234,255,.25),0 0 24px rgba(72,221,255,.3);
+}
+button:disabled{opacity:.32;transform:none;box-shadow:none}
+select,input[type=number]{padding:8px 10px}
+input[type=range]{accent-color:#62eaff}
+input[type=checkbox]{accent-color:#62eaff}
+.tiny{color:#9bb5d0}
+.workspace{
+  isolation:isolate;
+  background-color:#060d1a;
+  background-image:
+    radial-gradient(ellipse at 50% 45%,rgba(14,82,132,.17),transparent 58%),
+    linear-gradient(rgba(77,159,220,.035) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(77,159,220,.035) 1px,transparent 1px);
+  background-size:auto,36px 36px,36px 36px;
+}
+.workspace:before{
+  content:"";
+  position:absolute;
+  inset:0;
+  z-index:0;
+  pointer-events:none;
+  opacity:.45;
+  background:linear-gradient(115deg,transparent 0%,rgba(67,221,255,.045) 48%,transparent 56%);
+  animation:scannerSweep 13s linear infinite;
+}
+.workspace:after{
+  content:"";
+  position:absolute;
+  inset:12px;
+  z-index:0;
+  pointer-events:none;
+  border:1px solid rgba(92,195,255,.07);
+  border-radius:12px;
+  box-shadow:inset 0 0 55px rgba(23,116,185,.035);
+}
+@keyframes scannerSweep{
+  0%{transform:translateX(-35%);opacity:.12}
+  50%{opacity:.55}
+  100%{transform:translateX(35%);opacity:.12}
+}
+#board{position:relative;z-index:1}
+.float-tools{
+  top:16px;
+  right:16px;
+  z-index:2;
+  padding:7px;
+  gap:7px;
+  border:1px solid rgba(98,234,255,.2);
+  border-radius:15px;
+  background:rgba(7,17,32,.72);
+  box-shadow:0 12px 32px rgba(0,0,0,.25),inset 0 1px rgba(255,255,255,.04);
+  backdrop-filter:blur(18px);
+}
+.float-tools button{min-width:38px;background:rgba(20,39,64,.92)}
+#zoomLabel{
+  padding:0 5px;
+  color:#9defff;
+  font-variant-numeric:tabular-nums;
+  font-weight:700;
+}
+.bottombar{
+  min-height:82px;
+  gap:10px;
+  padding:10px 18px;
+}
+.tool-wrap{min-width:48px;gap:3px}
+.tool{
+  min-width:44px;
+  width:44px;
+  height:43px;
+  border-radius:13px;
+  font-size:19px;
+}
+.tool-label{
+  color:#8eaac7;
+  font-size:10px;
+  letter-spacing:.35px;
+  text-transform:uppercase;
+}
+.separator{border-color:rgba(98,234,255,.18)}
+.swatch{
+  width:26px;height:26px;
+  box-shadow:0 0 0 2px rgba(255,255,255,.055),0 5px 13px rgba(0,0,0,.28);
+}
+.swatch.selected{
+  outline:2px solid #62eaff;
+  outline-offset:3px;
+  box-shadow:0 0 17px rgba(98,234,255,.34);
+}
+.status{
+  left:16px;
+  bottom:15px;
+  color:#b9f4ff;
+  background:rgba(7,18,34,.78);
+  border:1px solid rgba(98,234,255,.2);
+  border-radius:11px;
+  padding:8px 12px;
+  box-shadow:0 7px 24px rgba(0,0,0,.24),0 0 18px rgba(40,190,255,.06);
+  backdrop-filter:blur(15px);
+  font-variant-numeric:tabular-nums;
+}
+.ig-credit{
+  left:16px;bottom:14px;
+  color:#7e9dbb;
+  text-shadow:0 0 10px rgba(98,234,255,.2);
+}
+.ig-credit:hover{color:#62eaff}
+.modal-backdrop{
+  background:rgba(2,7,17,.78);
+  backdrop-filter:blur(11px);
+}
+.modal{
+  background:linear-gradient(145deg,#142943,#0a1426 75%);
+  border:1px solid rgba(98,234,255,.3);
+  border-radius:19px;
+  box-shadow:0 25px 90px rgba(0,0,0,.58),0 0 42px rgba(36,173,255,.12);
+}
+.modal h3{color:#eafaff}
+.modal textarea{width:100%;background:#081629}
+.primary{
+  color:#04111d;
+  font-weight:800;
+  background:linear-gradient(130deg,#62eaff,#a0b5ff);
+  border-color:#a4f5ff;
+  box-shadow:0 0 20px rgba(98,234,255,.18);
+}
+
+/* Estilos de la interfaz de LaTeX */
+.latex-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 10px;
+}
+.latex-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.latex-field label {
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 600;
+}
+.latex-preview-box {
+  min-height: 80px;
+  background: rgba(4, 12, 24, 0.6);
+  border: 1px dashed rgba(98, 234, 255, 0.3);
+  border-radius: 9px;
+  padding: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow-x: auto;
+  font-size: 20px;
+  color: #ffffff;
+}
+
+.light{
+  --panel:#f1f6ff;
+  --panel2:#e6eef9;
+  --line:#c5d7eb;
+  --text:#1a2a40;
+  --muted:#637b96;
+  --accent:#168db8;
+}
+.light html,.light body{background:#edf4fc;color:#1a2a40}
+.light .topbar,.light .bottombar{
+  background:rgba(243,248,255,.94);
+  border-color:#cbdced;
+  box-shadow:0 8px 30px rgba(41,77,119,.1);
+}
+.light button,.light select,.light input[type=number]{
+  color:#203650;
+  background:linear-gradient(145deg,#fff,#eaf1fb);
+  border-color:#c9d9e9;
+}
+.light button.active{color:#fff;background:linear-gradient(130deg,#168db8,#687fe0)}
+.light .workspace{
+  background-color:#edf4fc;
+  background-image:
+    radial-gradient(ellipse at 50% 45%,rgba(62,146,205,.1),transparent 58%),
+    linear-gradient(rgba(53,112,170,.055) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(53,112,170,.055) 1px,transparent 1px);
+}
+.light .float-tools{background:rgba(255,255,255,.78);border-color:#cbdced}
+.light .float-tools button{background:rgba(246,250,255,.96)}
+.light #zoomLabel{color:#236b91}
+.light .status{background:rgba(255,255,255,.88);color:#294966;border-color:#cbdced}
+.light .modal{background:linear-gradient(145deg,#fff,#edf4fc)}
+.light .modal h3{color:#203650}
+.light .modal textarea{background:#f7faff;color:#203650}
+.light .tool-label{color:#607b98}
+.light .latex-preview-box{background:rgba(255, 255, 255, 0.7); border-color:#cbdced; color:#1a2a40;}
+@media(max-width:850px){
+  .topbar{padding:8px;gap:7px}
+  .group{padding-right:7px}
+  .bottombar{min-height:76px;gap:8px}
+  .float-tools{top:9px;right:9px}
+  .status{left:9px;bottom:9px}
+}
+@media(prefers-reduced-motion:reduce){
+  *,*:before,*:after{animation:none!important;transition:none!important}
+}
+
+</style>
+</head>
+<body>
+<div id="app">
+  <header class="topbar">
+    <div class="brand">✦ <span>Digital</span> Whiteboard</div>
+    <div class="group">
+      <span class="tiny">Página</span>
+      <button id="prevPage" title="Página anterior">‹</button>
+      <span id="pageCount" class="tiny">1 / 1</span>
+      <button id="nextPage" title="Página siguiente">›</button>
+      <button id="addPage" title="Añadir página">＋</button>
+      <button id="deletePage" title="Eliminar página">−</button>
+    </div>
+    <div class="group">
+      <button id="themeBtn">☾ Oscuro</button>
+      <select id="paperType" title="Tipo de pizarra"><option value="plain">Lisa</option><option value="grid">Cuadriculada</option><option value="dots">Punteada</option></select>
+      <label class="tiny">Separación <input id="spacing" type="range" min="16" max="80" value="32"></label>
+    </div>
+    <div class="group">
+      <label class="tiny" title="Activa los ejes centrados en el lienzo"><input type="checkbox" id="axes"> Ejes XY</label>
+      <button id="imageBtn">▧ Imagen</button><input id="imageInput" type="file" accept="image/*" hidden>
+      <button id="latexBtn">∑ LaTeX</button>
+      <button id="saveBtn">↓ Guardar</button>
+      <button id="clearBtn">Limpiar</button>
+    </div>
+  </header>
+  <main class="workspace" id="workspace">
+    <canvas id="board"></canvas>
+    <div class="float-tools">
+      <button id="undoBtn" title="Deshacer">↶</button><button id="redoBtn" title="Rehacer">↷</button>
+      <button id="zoomOut" title="Alejar">−</button><span id="zoomLabel" class="tiny" style="align-self:center">100%</span><button id="zoomIn" title="Acercar">＋</button><button id="zoomReset" title="Restablecer zoom">100%</button>
+    </div>
+    <div class="status" id="status">Lápiz · 100%</div>
+  </main>
+  <footer class="bottombar" id="toolbar">
+    <a class="ig-credit" href="https://www.instagram.com/choq.yn/" target="_blank" rel="noopener noreferrer">ig:@choq.yn</a>
+    <div class="tool-wrap"><button class="tool active" data-tool="pen" title="Lápiz">✎</button><span class="tool-label">Lápiz</span></div>
+    <div class="tool-wrap"><button class="tool" data-tool="highlighter" title="Resaltador">▰</button><span class="tool-label">Resaltador</span></div>
+    <div class="tool-wrap"><button class="tool" data-tool="line" title="Línea recta">／</button><span class="tool-label">Línea</span></div>
+    <div class="tool-wrap"><button class="tool" data-tool="circle" title="Círculo">◯</button><span class="tool-label">Círculo</span></div>
+    <div class="tool-wrap"><button class="tool" data-tool="triangle" title="Triángulo">△</button><span class="tool-label">Triángulo</span></div>
+    <div class="tool-wrap"><button class="tool" data-tool="quad" title="Cuadrilátero">▱</button><span class="tool-label">Cuadrilátero</span></div>
+    <div class="tool-wrap"><button class="tool" data-tool="pentagon" title="Pentágono">⬠</button><span class="tool-label">Pentágono</span></div>
+    <div class="tool-wrap"><button class="tool" data-tool="hexagon" title="Hexágono">⬡</button><span class="tool-label">Hexágono</span></div>
+    <div class="tool-wrap"><button class="tool" data-tool="text" title="Texto">T</button><span class="tool-label">Texto</span></div>
+    <div class="tool-wrap"><button class="tool" data-tool="eraser" title="Borrador">⌫</button><span class="tool-label">Borrador</span></div>
+    <div class="tool-wrap"><button class="tool" data-tool="select" title="Seleccionar">⌖</button><span class="tool-label">Seleccionar</span></div>
+    <div class="separator"></div>
+    <label class="tiny">Grosor <input id="thickness" type="range" min="1" max="24" value="3"></label>
+    <div class="separator"></div>
+    <div class="colors" aria-label="Paleta de colores">
+      <button class="swatch selected" data-color="#ffffff" style="background:#fff" title="Blanco"></button>
+      <button class="swatch" data-color="#111111" style="background:#111" title="Negro"></button>
+      <button class="swatch" data-color="#e53935" style="background:#e53935" title="Rojo"></button>
+      <button class="swatch" data-color="#2eae63" style="background:#2eae63" title="Verde"></button>
+      <button class="swatch" data-color="#f4c542" style="background:#f4c542" title="Amarillo"></button>
+    </div>
+  </footer>
+</div>
+
+<div class="modal-backdrop" id="modal">
+  <div class="modal">
+    <h3 id="modalTitle">Insertar texto</h3>
+    <div id="modalBody"></div>
+    <div class="modal-actions"><button id="cancelModal">Cancelar</button><button class="primary" id="confirmModal">Insertar</button></div>
+  </div>
+</div>
+<script>
+(() => {
+const canvas=document.getElementById('board'),ctx=canvas.getContext('2d'),workspace=document.getElementById('workspace');
+const $=id=>document.getElementById(id);
+let pages=[{items:[]}],page=0,tool='pen',color='#ffffff',thickness=3,theme='dark',zoom=1,offset={x:0,y:0};
+let drawing=null,selected=null,drag=null,panDrag=null,undoStack=[],redoStack=[],modalAction=null;
+const state=()=>pages[page];
+const clone=v=>JSON.parse(JSON.stringify(v));
+function snapshot(){undoStack.push(JSON.stringify(pages));if(undoStack.length>60)undoStack.shift();redoStack=[];updateHistory()}
+function updateHistory(){$('undoBtn').disabled=!undoStack.length;$('redoBtn').disabled=!redoStack.length}
+function resize(){const r=workspace.getBoundingClientRect(),dpr=window.devicePixelRatio||1;canvas.width=Math.round(r.width*dpr);canvas.height=Math.round(r.height*dpr);canvas.style.width=r.width+'px';canvas.style.height=r.height+'px';ctx.setTransform(dpr,0,0,dpr,0,0);render()}
+window.addEventListener('resize',resize);
+function dims(){return {w:canvas.clientWidth,h:canvas.clientHeight}}
+function bg(){return theme==='dark'?'#111722':'#ffffff'}
+function ink(){return theme==='dark'?'#f5f7fb':'#161b25'}
+function world(p){return {x:(p.x-offset.x)/zoom,y:(p.y-offset.y)/zoom}}
+function screen(p){return {x:p.x*zoom+offset.x,y:p.y*zoom+offset.y}}
+function pointer(e){const r=canvas.getBoundingClientRect();return {x:e.clientX-r.left,y:e.clientY-r.top}}
+function render(){
+ const {w,h}=dims();ctx.clearRect(0,0,w,h);ctx.fillStyle=bg();ctx.fillRect(0,0,w,h);
+ ctx.save();ctx.translate(offset.x,offset.y);ctx.scale(zoom,zoom);
+ drawPaper(w,h);if($('axes').checked)drawAxes(w,h);
+ for(const item of state().items)drawItem(item);
+ if(drawing)drawItem(drawing);
+ if(selected){const b=bounds(selected);ctx.save();ctx.strokeStyle='#7c9cff';ctx.lineWidth=1.5/zoom;ctx.setLineDash([5/zoom,4/zoom]);ctx.strokeRect(b.x-5/zoom,b.y-5/zoom,b.w+10/zoom,b.h+10/zoom);ctx.setLineDash([]);ctx.fillStyle='#7c9cff';ctx.fillRect(b.x+b.w-4/zoom,b.y+b.h-4/zoom,8/zoom,8/zoom);ctx.restore()}
+ ctx.restore();
+ $('zoomLabel').textContent=Math.round(zoom*100)+'%';$('status').textContent=({pen:'Lápiz',highlighter:'Resaltador',line:'Línea',circle:'Círculo',triangle:'Triángulo',quad:'Cuadrilátero',pentagon:'Pentágono',hexagon:'Hexágono',text:'Texto',eraser:'Borrador',select:'Seleccionar'}[tool])+' · '+Math.round(zoom*100)+'%';
+}
+function drawPaper(w,h){
+ const type=$('paperType').value,step=Number($('spacing').value);if(type==='plain')return;
+ const left=-offset.x/zoom,top=-offset.y/zoom,right=(w-offset.x)/zoom,bottom=(h-offset.y)/zoom;
+ ctx.save();ctx.strokeStyle=theme==='dark'?'#293447':'#dce2ec';ctx.fillStyle=theme==='dark'?'#354158':'#c5cedc';ctx.lineWidth=1/zoom;
+ if(type==='grid'){ctx.beginPath();for(let x=Math.floor(left/step)*step;x<right;x+=step){ctx.moveTo(x,top);ctx.lineTo(x,bottom)}for(let y=Math.floor(top/step)*step;y<bottom;y+=step){ctx.moveTo(left,y);ctx.lineTo(right,y)}ctx.stroke()}
+ else{for(let x=Math.floor(left/step)*step;x<right;x+=step)for(let y=Math.floor(top/step)*step;y<bottom;y+=step){ctx.beginPath();ctx.arc(x,y,1.25/zoom,0,Math.PI*2);ctx.fill()}}
+ ctx.restore();
+}
+function drawAxes(w,h){
+ const step=Number($('spacing').value),unit=step;
+ const left=-offset.x/zoom,top=-offset.y/zoom,right=(w-offset.x)/zoom,bottom=(h-offset.y)/zoom;
+ const ox=Math.max(left,Math.min(right,0)),oy=Math.max(top,Math.min(bottom,0));
+ ctx.save();ctx.lineWidth=2/zoom;ctx.strokeStyle=theme==='dark'?'#ffca66':'#375b9e';ctx.fillStyle=theme==='dark'?'#ffe0a0':'#294c8b';ctx.font=`${12/zoom}px Arial`;
+ ctx.beginPath();ctx.moveTo(left,0);ctx.lineTo(right,0);ctx.moveTo(0,top);ctx.lineTo(0,bottom);ctx.stroke();
+ ctx.lineWidth=1/zoom;ctx.font=`${11/zoom}px Arial`;ctx.textAlign='center';ctx.textBaseline='top';
+ for(let i=-15;i<=15;i++){let x=i*unit;if(x>=left&&x<=right){ctx.beginPath();ctx.moveTo(x,-4/zoom);ctx.lineTo(x,4/zoom);ctx.stroke();if(i!==0)ctx.fillText(i,x,6/zoom)}}
+ ctx.textAlign='right';ctx.textBaseline='middle';
+ for(let i=-15;i<=15;i++){let y=-i*unit;if(y>=top&&y<=bottom){ctx.beginPath();ctx.moveTo(-4/zoom,y);ctx.lineTo(4/zoom,y);ctx.stroke();if(i!==0)ctx.fillText(i,-7/zoom,y)}}
+ ctx.textAlign='left';ctx.textBaseline='top';ctx.fillText('X',right-14/zoom,7/zoom);ctx.fillText('Y',7/zoom,top+4/zoom);ctx.fillText('0',6/zoom,6/zoom);
+ ctx.restore();
+}
+function drawItem(o){
+ ctx.save();ctx.globalAlpha=o.opacity??1;ctx.strokeStyle=o.color||ink();ctx.fillStyle=o.color||ink();ctx.lineWidth=o.width||3;ctx.lineCap='round';ctx.lineJoin='round';
+ if(o.type==='path'){if(!o.points.length){ctx.restore();return}ctx.beginPath();ctx.moveTo(o.points[0].x,o.points[0].y);for(let p of o.points.slice(1))ctx.lineTo(p.x,p.y);ctx.stroke()}
+ else if(o.type==='line'){ctx.beginPath();ctx.moveTo(o.x1,o.y1);ctx.lineTo(o.x2,o.y2);ctx.stroke()}
+ else if(o.type==='shape'){let pts=o.points;ctx.beginPath();ctx.moveTo(pts[0].x,pts[0].y);pts.slice(1).forEach(p=>ctx.lineTo(p.x,p.y));ctx.closePath();ctx.stroke()}
+ else if(o.type==='text'){ctx.font=`${o.size||24}px Arial`;ctx.textBaseline='top';ctx.fillText(o.text,o.x,o.y)}
+ else if(o.type==='latex'&&o.img){ctx.drawImage(o.img,o.x,o.y,o.w,o.h)}
+ else if(o.type==='image'&&o.img){ctx.drawImage(o.img,o.x,o.y,o.w,o.h)}
+ ctx.restore();
+}
+function bounds(o){
+ if(o.type==='path'||o.type==='shape'){let ps=o.type==='path'?o.points:o.points;let xs=ps.map(p=>p.x),ys=ps.map(p=>p.y);return {x:Math.min(...xs),y:Math.min(...ys),w:Math.max(12,Math.max(...xs)-Math.min(...xs)),h:Math.max(12,Math.max(...ys)-Math.min(...ys))}}
+ if(o.type==='line'){return {x:Math.min(o.x1,o.x2),y:Math.min(o.y1,o.y2),w:Math.max(12,Math.abs(o.x2-o.x1)),h:Math.max(12,Math.abs(o.y2-o.y1))}}
+ return {x:o.x,y:o.y,w:o.w||Math.max(50,(o.text||'').length*(o.size||24)*.6),h:o.h||((o.size||24)*1.4)};
+}
+function hit(p,o){const b=bounds(o),pad=12/zoom;return p.x>=b.x-pad&&p.x<=b.x+b.w+pad&&p.y>=b.y-pad&&p.y<=b.y+b.h+pad}
+function polygon(kind,a,b){let cx=(a.x+b.x)/2,cy=(a.y+b.y)/2,rx=Math.abs(b.x-a.x)/2,ry=Math.abs(b.y-a.y)/2,n={triangle:3,quad:4,pentagon:5,hexagon:6}[kind],pts=[];for(let i=0;i<n;i++){let ang=-Math.PI/2+i*2*Math.PI/n;pts.push({x:cx+Math.cos(ang)*rx,y:cy+Math.sin(ang)*ry})}return pts}
+function setTool(t){tool=t;document.querySelectorAll('.tool').forEach(b=>b.classList.toggle('active',b.dataset.tool===t));selected=null;render()}
+document.querySelectorAll('.tool').forEach(b=>b.addEventListener('click',()=>setTool(b.dataset.tool)));
+function addItem(o){snapshot();state().items.push(o);selected=o;render()}
+canvas.addEventListener('pointerdown',e=>{
+ canvas.setPointerCapture(e.pointerId);let p=world(pointer(e));
+ if(tool==='select'){
+   let found=[...state().items].reverse().find(o=>hit(p,o));selected=found||null;
+   if(found){snapshot();drag={item:found,last:p}}
+   else{panDrag={last:pointer(e)}}
+   render();return;
+ }
+ if(tool==='eraser'){let idx=state().items.findIndex(o=>hit(p,o));if(idx>=0){snapshot();state().items.splice(idx,1)}render();return}
+ if(tool==='text'){openModal('Insertar texto','<textarea id="entry" placeholder="Escribe aquí..."></textarea>',()=>{let v=$('entry').value.trim();if(v)addItem({type:'text',x:p.x,y:p.y,text:v,color,width:1,size:24})});return}
+ if(tool==='pen'||tool==='highlighter'){drawing={type:'path',points:[p],color,width:tool==='highlighter'?Math.max(12,thickness*4):thickness,opacity:tool==='highlighter'?.28:1};render();return}
+ drawing={type:'temp',tool,start:p,end:p,color,width:thickness};
+});
+canvas.addEventListener('pointermove',e=>{
+ let p=world(pointer(e));
+ if(drag){let dx=p.x-drag.last.x,dy=p.y-drag.last.y;moveItem(drag.item,dx,dy);drag.last=p;render();return}
+ if(panDrag){let q=pointer(e);offset.x+=q.x-panDrag.last.x;offset.y+=q.y-panDrag.last.y;panDrag.last=q;render();return}
+ if(!drawing)return;
+ if(drawing.type==='path')drawing.points.push(p);else drawing.end=p;render();
+});
+function moveItem(o,dx,dy){if(o.type==='path'||o.type==='shape')o.points.forEach(p=>{p.x+=dx;p.y+=dy});else if(o.type==='line'){o.x1+=dx;o.y1+=dy;o.x2+=dx;o.y2+=dy}else{o.x+=dx;o.y+=dy}}
+canvas.addEventListener('pointerup',()=>{
+ if(drag){drag=null;render();return}
+ if(panDrag){panDrag=null;render();return}
+ if(!drawing)return;
+ if(drawing.type==='path'){state().items.push(drawing);snapshotAfterDrawing();drawing=null;render();return}
+ let {start:a,end:b,tool:t}=drawing,o=null;
+ if(t==='line')o={type:'line',x1:a.x,y1:a.y,x2:b.x,y2:b.y,color,width:thickness};
+ else if(t==='circle'){let r=Math.hypot(b.x-a.x,b.y-a.y)/2,cx=(a.x+b.x)/2,cy=(a.y+b.y)/2,pts=[];for(let i=0;i<48;i++){let q=i*Math.PI/24;pts.push({x:cx+Math.cos(q)*r,y:cy+Math.sin(q)*r})}o={type:'shape',points:pts,color,width:thickness}}
+ else if(['triangle','quad','pentagon','hexagon'].includes(t))o={type:'shape',points:polygon(t,a,b),color,width:thickness};
+ if(o){snapshot();state().items.push(o);selected=o}drawing=null;render();
+});
+function snapshotAfterDrawing(){undoStack.push(JSON.stringify(pages));if(undoStack.length>60)undoStack.shift();redoStack=[];updateHistory()}
+canvas.addEventListener('pointercancel',()=>{drawing=null;drag=null;panDrag=null;render()});
+canvas.addEventListener('wheel',e=>{e.preventDefault();let p=pointer(e),before=world(p);zoom=Math.max(.25,Math.min(4,zoom*(e.deltaY<0?1.1:.9)));offset.x=p.x-before.x*zoom;offset.y=p.y-before.y*zoom;render()},{passive:false});
+function openModal(title,body,action,confirmText="Insertar"){
+  $('modalTitle').textContent=title;
+  $('modalBody').innerHTML=body;
+  $('confirmModal').textContent=confirmText;
+  $('modal').style.display='flex';
+  modalAction=action;
+}
+function closeModal(){$('modal').style.display='none';modalAction=null}
+$('cancelModal').onclick=closeModal;$('confirmModal').onclick=()=>{let f=modalAction;closeModal();if(f)f()};
+
+// FUNCIONALIDAD LATEX ACTUALIZADA CON VISTA PREVIA Y ESTAMPADO
+$('latexBtn').onclick = () => {
+  const htmlContent = `
+    <div class="latex-container">
+      <div class="latex-field">
+        <label for="latexInput">1. Código LaTeX:</label>
+        <textarea id="latexInput" placeholder="Ejemplo: \\frac{-b \\pm \\sqrt{b^2-4ac}}{2a}"></textarea>
+      </div>
+      <div class="latex-field">
+        <label>2. Vista previa:</label>
+        <div id="latexPreview" class="latex-preview-box"></div>
+      </div>
+    </div>
+  `;
+
+  openModal('Editor de LaTeX', htmlContent, () => {
+    const previewEl = $('latexPreview');
+    if (!previewEl || !previewEl.firstElementChild) return;
+
+    const svgBlob = new Blob([`
+      <svg xmlns="http://www.w3.org/2000/svg" width="${previewEl.offsetWidth}" height="${previewEl.offsetHeight}">
+        <foreignObject width="100%" height="100%">
+          <div xmlns="http://www.w3.org/1999/xhtml" style="color: ${color}; font-size: 24px; display: flex; align-items: center; justify-content: center; height: 100%;">
+            ${previewEl.innerHTML}
+          </div>
+        </foreignObject>
+      </svg>
+    `], { type: 'image/svg+xml;charset=utf-8' });
+
+    const url = URL.createObjectURL(svgBlob);
+    const img = new Image();
+    img.onload = () => {
+      addItem({
+        type: 'latex',
+        x: (dims().w / 2 - offset.x) / zoom - img.width / 2,
+        y: (dims().h / 2 - offset.y) / zoom - img.height / 2,
+        w: img.width,
+        h: img.height,
+        img,
+        url,
+        rawText: $('latexInput').value
+      });
+    };
+    img.src = url;
+  }, 'Estampar en la pizarra');
+
+  const inputEl = $('latexInput');
+  const previewEl = $('latexPreview');
+
+  const updatePreview = () => {
+    const code = inputEl.value.trim();
+    if (!code) {
+      previewEl.innerHTML = '';
+      return;
+    }
+    try {
+      katex.render(code, previewEl, {
+        throwOnError: false,
+        displayMode: true
+      });
+    } catch (e) {
+      previewEl.textContent = 'Error de sintaxis LaTeX';
+    }
+  };
+
+  inputEl.addEventListener('input', updatePreview);
+  inputEl.value = "\\frac{-b \\pm \\sqrt{b^2-4ac}}{2a}";
+  updatePreview();
+};
+
+$('imageBtn').onclick=()=>$('imageInput').click();
+$('imageInput').onchange=e=>{let file=e.target.files[0];if(!file)return;let url=URL.createObjectURL(file),img=new Image();img.onload=()=>{let scale=Math.min(1,420/img.width,320/img.height);addItem({type:'image',x:80-offset.x/zoom,y:80-offset.y/zoom,w:img.width*scale,h:img.height*scale,img,url});URL.revokeObjectURL(url)};img.src=url;e.target.value=''};
+$('themeBtn').onclick=()=>{theme=theme==='dark'?'light':'dark';document.body.classList.toggle('light',theme==='light');$('themeBtn').textContent=theme==='dark'?'☾ Oscuro':'☀ Blanco';document.querySelectorAll('.swatch').forEach(b=>b.classList.remove('selected'));color=theme==='dark'?'#ffffff':'#111111';document.querySelector(`.swatch[data-color="${color}"]`).classList.add('selected');render()};
+$('paperType').onchange=render;$('spacing').oninput=render;
+$('axes').onchange=()=>{
+ if($('axes').checked){const {w,h}=dims();offset.x=w/2;offset.y=h/2;}
+ render();
+};
+$('thickness').oninput=e=>thickness=Number(e.target.value);
+document.querySelectorAll('.swatch').forEach(b=>b.onclick=()=>{color=b.dataset.color;document.querySelectorAll('.swatch').forEach(x=>x.classList.toggle('selected',x===b))});
+function pageUI(){$('pageCount').textContent=(page+1)+' / '+pages.length;$('prevPage').disabled=page===0;$('nextPage').disabled=page===pages.length-1;$('deletePage').disabled=pages.length===1;selected=null;render()}
+$('prevPage').onclick=()=>{if(page>0)page--;pageUI()};$('nextPage').onclick=()=>{if(page<pages.length-1)page++;pageUI()};
+$('addPage').onclick=()=>{if(pages.length>=20){alert('Has alcanzado el máximo de 20 páginas.');return}pages.splice(page+1,0,{items:[]});page++;pageUI()};
+$('deletePage').onclick=()=>{if(pages.length===1)return;if(confirm('¿Eliminar esta página y todo su contenido?')){pages.splice(page,1);page=Math.max(0,page-1);pageUI()}};
+$('clearBtn').onclick=()=>{if(confirm('¿Borrar todo el contenido de esta página? Esta acción se puede deshacer.')){snapshot();state().items=[];selected=null;render()}};
+$('undoBtn').onclick=()=>{if(!undoStack.length)return;redoStack.push(JSON.stringify(pages));pages=JSON.parse(undoStack.pop());page=Math.min(page,pages.length-1);pageUI();updateHistory()};
+$('redoBtn').onclick=()=>{if(!redoStack.length)return;undoStack.push(JSON.stringify(pages));pages=JSON.parse(redoStack.pop());page=Math.min(page,pages.length-1);pageUI();updateHistory()};
+$('zoomIn').onclick=()=>{zoom=Math.min(4,zoom*1.2);render()};$('zoomOut').onclick=()=>{zoom=Math.max(.25,zoom/1.2);render()};$('zoomReset').onclick=()=>{zoom=1;offset={x:0,y:0};render()};
+$('saveBtn').onclick=()=>{
+ const serial=pages.map(pg=>({items:pg.items.map(o=>{let c={...o};delete c.img;delete c.url;return c})}));
+ const blob=new Blob([JSON.stringify({app:'Digital Whiteboard',version:1,theme,paper:$('paperType').value,spacing:$('spacing').value,axes:$('axes').checked,pages:serial},null,2)],{type:'application/json'});
+ const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='digital-whiteboard.json';a.click();URL.revokeObjectURL(a.href);
+ try{localStorage.setItem('digital-whiteboard-backup',JSON.stringify({theme,pages:serial}))}catch(e){}
+};
+function restore(){try{let s=JSON.parse(localStorage.getItem('digital-whiteboard-backup'));if(s?.pages?.length){pages=s.pages.map(p=>({items:p.items||[]}));theme=s.theme||theme;document.body.classList.toggle('light',theme==='light');$('themeBtn').textContent=theme==='dark'?'☾ Oscuro':'☀ Blanco'}}catch(e){}}
+restore();pageUI();resize();updateHistory();
+})();
+</script>
+</body>
+</html>
